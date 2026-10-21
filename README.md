@@ -136,15 +136,20 @@ data** wipes everything MuseDeck stored.
 
 ## Deploy on GitHub Pages
 
-This repo includes `.github/workflows/pages.yml`, which deploys the repository
-root as a static site on every push to `main`. Enable it once:
+Enable it once in the repository:
 
-**Repository Settings → Pages → Build and deployment → Source: GitHub Actions.**
+**Settings → Pages → Build and deployment → Source: Deploy from a branch →
+Branch: `main`, folder `/ (root)` → Save.**
 
-All asset paths are relative, so the app works under
-`https://<user>.github.io/TESTMUSE/` as well as at a domain root.
-There is no build step and no dependency to install — React or a bundler would
-add weight without changing what the browser can do here.
+GitHub then publishes the repository root as a static site at
+`https://<user>.github.io/TESTMUSE/` and republishes on every push to `main`.
+All asset paths in MuseDeck are relative, so the app works under that project
+path as well as at a domain root. There is no build step and no dependency to
+install — React or a bundler would add weight without changing what the
+browser can do here. (A GitHub Actions deployment workflow would work equally
+well; it is not included because the Muse GitHub App used to publish this repo
+does not have the `workflows` permission GitHub requires to write workflow
+files. Branch deployment needs no workflow file.)
 
 ## Project layout
 
