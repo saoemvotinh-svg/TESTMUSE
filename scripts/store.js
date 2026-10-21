@@ -22,6 +22,9 @@ export const DEFAULT_SETTINGS = {
   autoplayNext: true,
   repeat: "off",           // off | all | one
   shuffle: false,
+  boost: 1,                // WebAudio gain for native local media (1 = off)
+  skin: "default",         // progress bar style: default | teal | amber | mono
+  ambient: true,           // ambient glow around the video stage
   eq: { bass: 0, mid: 0, treble: 0 },
   // Opt-in: enables WebAudio processing (visualizer + EQ) for native media.
   // Off by default because routing a cross-origin stream without CORS
