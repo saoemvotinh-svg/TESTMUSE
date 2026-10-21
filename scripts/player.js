@@ -218,8 +218,24 @@ export class Player {
   }
   setRate(r) {
     this._rate = r;
-    if (this.mode === "youtube") { if (this.yt && this.ytReady) this.yt.setPlaybackRate(r); return; }
+    if (this.mode === "youtube") {
+      if (this.yt && this.ytReady) {
+        // YouTube only honours the rates the video actually offers
+        // (usually 0.25–2). Pick the closest available rate.
+        let applied = r;
+        try {
+          const rates = this.yt.getAvailablePlaybackRates ? this.yt.getAvailablePlaybackRates() : [];
+          if (rates && rates.length) {
+            applied = rates.reduce((best, x) => Math.abs(x - r) < Math.abs(best - r) ? x : best, rates[0]);
+          }
+        } catch { /* fall through with requested rate */ }
+        this.yt.setPlaybackRate(applied);
+        this.appliedRate = applied;
+      }
+      return;
+    }
     this.audioEl.playbackRate = r; this.videoEl.playbackRate = r;
+    this.appliedRate = r;
   }
   stop() {
     this.pause();
