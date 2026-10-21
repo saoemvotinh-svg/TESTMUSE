@@ -111,6 +111,27 @@ or add it to the queue.
   sidebar, Media Session API (OS media keys and lock-screen metadata),
   optional Web Audio **visualizer and 3-band equalizer** for local media
   (Settings, off by default — see the note there about CORS and remote streams).
+- **Premium-style tools** (inspired by popular YouTube browser extensions,
+  rebuilt natively — see the honesty note below): **ambient glow** around the
+  video stage from the item's artwork or a captured frame, **volume boost**
+  150–300% for local media, **extended playback speeds** 0.25×–4× (YouTube
+  applies the closest rate it offers and tells you), **video filters**
+  (bright/warm/vivid/B&W), **A–B section loop** on the transport bar,
+  **frame snapshot** to PNG for native video, and switchable
+  **progress-bar styles**.
+
+### An honest note about YouTube ads and “Premium”
+
+MuseDeck cannot remove YouTube ads, and no feature here fakes a Premium
+subscription. Ads are served by YouTube inside its own embedded player;
+extensions that strip them inject code into youtube.com, which a website
+using the official IFrame API neither can nor may do — the
+[YouTube API Services Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service)
+prohibit circumventing ads and restrictions, and breaking them risks the
+embed being blocked. A “Premium logo” swap (one popular extension does
+exactly that and nothing more) is decoration, not a feature. What MuseDeck
+adds instead is everything that can legitimately be built *around* the
+official player, listed above.
 - **Keyboard:** `Space`/`K` play-pause, `←`/`→` seek 5s (Shift = 15s),
   `↑`/`↓` volume, `M` mute, `N`/`P` next/previous, `S` shuffle, `R` repeat,
   `F` fullscreen in the watch view, `/` focuses search. Shortcuts never fire
