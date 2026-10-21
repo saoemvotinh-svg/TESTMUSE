@@ -119,10 +119,12 @@ async function loadImportedFiles() {
   const rows = await idbGetAllFiles();
   for (const row of rows) {
     if (!row || !row.id || !row.blob) continue;
-    state.library.set(row.id, {
+    const item = {
       id: row.id, title: row.name, kind: row.kind, source: "file",
       blob: row.blob, size: row.size, addedAt: row.addedAt || 0, persisted: true,
-    });
+    };
+    state.library.set(row.id, item);
+    probeDuration(item); // re-learn duration lost across reloads
   }
 }
 
