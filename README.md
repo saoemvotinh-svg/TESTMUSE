@@ -1,19 +1,175 @@
-# TESTMUSE 🌸
+# MuseDeck — Music & Video Player
 
-Repo thử nghiệm **vibe coding** cùng Muse — mô tả bằng lời, Muse viết code và đẩy thẳng vào repo.
+MuseDeck is a complete music and video player that runs entirely in the browser.
+No account, no backend, no build step. It plays three kinds of sources:
 
-## Nội dung
+1. **Media files committed to this repository**, listed in a manifest.
+2. **Audio and video files you import from your device** (stored locally in your browser).
+3. **Links you paste** — YouTube videos/playlists and direct audio/video file URLs.
 
-- `index.html` — Trang “Phố Hoa Anh Đào”: bầu trời anime, cánh hoa anh đào rơi bằng canvas,
-  nút “Thêm hoa rơi” để tăng mật độ hoa. Mở file trực tiếp bằng trình duyệt là xem được.
-  Muốn xem online: **Settings → Pages → Deploy from branch `main`** rồi mở link GitHub Pages.
+The original “Phố Hoa Anh Đào” demo page was replaced by this application.
 
-## Cách “vibe” tiếp
+## Run it locally
 
-Nhắn cho Muse trong đoạn chat, ví dụ:
+The app uses ES modules, so open it through a static server (not `file://`):
 
-- “Thêm đồng hồ hiển thị giờ hiện tại vào trang”
-- “Đổi nền thành hoàng hôn”
-- “Thêm một mini game hứng hoa anh đào, tính điểm”
+```bash
+# from the repository root, any one of:
+python3 -m http.server 8080
+# or
+npx serve .
+```
 
-Muse sẽ đọc code hiện tại, sửa đúng chỗ cần sửa và commit bản mới.
+Then open <http://localhost:8080>.
+
+## Add media to the repository
+
+1. Put audio/video files somewhere in the repo, for example `assets/media/my-song.mp3`.
+2. List them in [`assets/media-manifest.json`](assets/media-manifest.json):
+
+```json
+{
+  "items": [
+    {
+      "title": "My Song",
+      "artist": "Optional artist name",
+      "kind": "audio",
+      "src": "assets/media/my-song.mp3",
+      "artwork": "assets/media/my-song.jpg"
+    },
+    {
+      "title": "My Video",
+      "kind": "video",
+      "src": "assets/media/my-video.mp4"
+    }
+  ]
+}
+```
+
+Use **relative paths** (no leading slash) so they work under the GitHub Pages
+project path. Only add metadata you actually know — MuseDeck never invents
+titles, durations, or artwork. Durations are read from the media itself when played.
+Keep committed media reasonably small; GitHub repositories are not a media CDN.
+
+## Import local media
+
+- Click **Import media**, or drag and drop files anywhere onto the window.
+- Multiple files at once are supported. Duplicates (same name and size) are skipped.
+- Supported formats are whatever your browser can decode — typically MP3, WAV,
+  OGG, M4A/AAC, FLAC, Opus for audio and MP4 (H.264), WebM, MOV for video.
+  MKV/AVI files generally do **not** play in browsers.
+- Imported files are stored as blobs in **IndexedDB**, so they survive a reload.
+  If the browser refuses storage (quota/private mode), the file still plays for
+  the session and the UI says so honestly. The browser may evict stored blobs
+  under disk pressure; your original files on the device are never touched.
+- Remove an imported item with the trash button on its row — this deletes only
+  the browser's stored copy.
+
+## Paste a URL
+
+Open **Open from URL** and paste:
+
+- YouTube: `youtube.com/watch?v=…`, `youtu.be/…`, `/shorts/…`, `/embed/…`,
+  `/live/…`, YouTube Music links, and playlist links (`/playlist?list=…` or any
+  link containing a valid `list=` parameter). A `t=1m30s` start time is honoured.
+- Direct media files: URLs ending in `.mp3 .wav .ogg .m4a .aac .flac .opus`
+  (audio) or `.mp4 .webm .mov .m4v .m3u8` (video).
+
+Malformed links, missing video IDs, unsupported hosts/extensions and
+non-`http(s)` URLs are rejected with a specific explanation. You can play a
+checked link immediately, add it to the library (links persist in localStorage),
+or add it to the queue.
+
+### YouTube rules and limits
+
+- Playback uses the official **YouTube IFrame Player API** and YouTube's own
+  embedded player, per the
+  [YouTube API Services Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service).
+  MuseDeck does not download YouTube media, extract streams, block ads, or hide the player.
+- Videos whose owners disabled embedding, and private/removed videos, cannot
+  play — YouTube reports that in the player and MuseDeck surfaces its error code message.
+- Playlists play as a single playlist item inside YouTube's player; MuseDeck's
+  queue cannot see or reorder the individual videos inside a YouTube playlist.
+- Features that require processing the audio stream (equalizer, visualizer),
+  subtitle-file import and picture-in-picture apply only to native media and
+  are disabled, with an explanation, for YouTube items.
+
+## Features
+
+- **Transport:** play/pause, previous/next, seek bar with elapsed/total time,
+  volume + mute (remembered), playback speed 0.5×–2×.
+- **Queue:** play-next ordering from any list, add/remove, drag to reorder
+  (plus keyboard-friendly up/down buttons), clear, shuffle, repeat off/all/one,
+  automatic next-track.
+- **Video:** dedicated watch layout, theater mode, fullscreen,
+  picture-in-picture (native video), click-to-play/pause, `.vtt` subtitle file
+  import for the loaded native video.
+- **Library:** Home overview with real counts, music/video libraries, search,
+  sorting, favorites, recently-played history (last 60).
+- **Playlists:** create, rename, delete (with confirmation), add/remove items, play all.
+- **Extras:** sleep timer (15/30/45/60 minutes), dark/light theme, compact
+  sidebar, Media Session API (OS media keys and lock-screen metadata),
+  optional Web Audio **visualizer and 3-band equalizer** for local media
+  (Settings, off by default — see the note there about CORS and remote streams).
+- **Keyboard:** `Space`/`K` play-pause, `←`/`→` seek 5s (Shift = 15s),
+  `↑`/`↓` volume, `M` mute, `N`/`P` next/previous, `S` shuffle, `R` repeat,
+  `F` fullscreen in the watch view, `/` focuses search. Shortcuts never fire
+  while typing in a field.
+
+## Privacy and storage
+
+Everything is local: settings, favorites, playlists, history and URL items in
+`localStorage`; imported files in IndexedDB. Nothing is uploaded, tracked, or
+sent anywhere except the media streams you explicitly play (YouTube's embed
+loads from YouTube, direct URLs from their host). **Settings → Clear all local
+data** wipes everything MuseDeck stored.
+
+## Browser limitations
+
+- Autoplay with sound requires a user gesture; MuseDeck only starts playback
+  from your actions.
+- Remote direct URLs can fail because of CORS, expired links, or unsupported
+  codecs. The player shows the browser's real error instead of pretending.
+- HLS (`.m3u8`) plays natively in Safari. Chromium-based browsers usually need
+  an MSE-based HLS player, which MuseDeck deliberately does not bundle.
+- MPEG-DASH (`.mpd`) is not natively playable in most browsers.
+
+## Deploy on GitHub Pages
+
+This repo includes `.github/workflows/pages.yml`, which deploys the repository
+root as a static site on every push to `main`. Enable it once:
+
+**Repository Settings → Pages → Build and deployment → Source: GitHub Actions.**
+
+All asset paths are relative, so the app works under
+`https://<user>.github.io/TESTMUSE/` as well as at a domain root.
+There is no build step and no dependency to install — React or a bundler would
+add weight without changing what the browser can do here.
+
+## Project layout
+
+```
+index.html                    App shell: sidebar, views, dialogs, player bar
+styles/main.css               Design tokens (dark/light), layout, components
+scripts/main.js               Entry point
+scripts/app.js                UI, library, queue, playlists, import, settings
+scripts/player.js             Playback engine: native audio/video + YouTube API
+scripts/urlparse.js           Pure YouTube/direct URL parsing (unit-tested)
+scripts/store.js              localStorage state + IndexedDB file storage
+scripts/icons.js              Inline SVG icon set (Lucide-style paths)
+scripts/util.js               Formatting and DOM helpers
+assets/media-manifest.json    Repository media catalog (empty by default)
+tests/urlparse.test.mjs       Node unit tests:  node --test tests/urlparse.test.mjs
+```
+
+## Design notes
+
+Built following Anthropic's `frontend-design` skill and Vercel's Web Interface
+Guidelines: a deliberate token system (warm ink neutrals, one vermilion accent,
+Be Vietnam Pro UI type, JetBrains Mono only for timecodes), visible
+`:focus-visible` states, labelled icon buttons, `aria-live` toasts,
+`prefers-reduced-motion` support, and no decorative gradients or placeholder
+controls — every visible button does something. The Vercel React best-practices
+skill was reviewed and intentionally not applied: the app uses no framework,
+by design. Browser checks were run with the Playwright CLI skill's workflow
+(snapshot, interact, console, screenshots at desktop and mobile sizes).
