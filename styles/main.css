@@ -145,7 +145,7 @@ select { background: var(--panel-2); border: 1px solid var(--line); color: var(-
 
 /* ---------- Stage (video / YouTube) ---------- */
 .stage { margin-bottom: 22px; position: relative; z-index: 0; }
-.ambient { position: absolute; inset: -16px; background-size: cover; background-position: center; filter: blur(42px) saturate(1.35); opacity: 0.45; z-index: -1; border-radius: 26px; pointer-events: none; }
+.ambient { position: absolute; inset: -48px; background-size: cover; background-position: center; filter: blur(52px) saturate(1.45); opacity: 0.55; z-index: -1; border-radius: 40px; pointer-events: none; }
 .stage-media { position: relative; aspect-ratio: 16 / 9; max-height: 72dvh; background: #000; border: 1px solid var(--line); border-bottom: 0; border-radius: 14px 14px 0 0; overflow: hidden; }
 .stage-media video.f-bright { filter: brightness(1.25) contrast(1.05); }
 .stage-media video.f-warm { filter: sepia(0.35) saturate(1.2) brightness(1.03); }
