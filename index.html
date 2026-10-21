@@ -1,95 +1,373 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phố Hoa Anh Đào 🌸</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    min-height: 100vh; overflow: hidden;
-    font-family: "Segoe UI", system-ui, sans-serif;
-    background: linear-gradient(180deg, #6ec1f5 0%, #aee3ff 35%, #ffe3f1 75%, #fff0f6 100%);
-    display: flex; align-items: center; justify-content: center;
-  }
-  canvas { position: fixed; inset: 0; z-index: 1; }
-  .card {
-    position: relative; z-index: 2; text-align: center;
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 24px; padding: 44px 52px;
-    box-shadow: 0 18px 50px rgba(214, 90, 140, 0.25);
-    max-width: min(92vw, 560px);
-  }
-  h1 { font-size: 2.4rem; color: #b03060; letter-spacing: 0.5px; }
-  p { margin: 14px 0 24px; color: #5b4250; line-height: 1.6; }
-  button {
-    font-size: 1rem; font-weight: 600; cursor: pointer;
-    color: #fff; background: linear-gradient(135deg, #ff7eb3, #e75480);
-    border: none; border-radius: 999px; padding: 12px 26px;
-    box-shadow: 0 8px 20px rgba(231, 84, 128, 0.4);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(231, 84, 128, 0.45); }
-  .foot { margin-top: 22px; font-size: 0.85rem; color: #97707f; }
-</style>
+<meta name="theme-color" content="#101214">
+<meta name="description" content="MuseDeck — a music and video player that runs entirely in your browser. Play local files, repository media, YouTube and direct media URLs.">
+<title>MuseDeck — Music &amp; Video Player</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101214'/%3E%3Crect x='7' y='12' width='3.5' height='8' rx='1.75' fill='%23e4572e'/%3E%3Crect x='14' y='7' width='3.5' height='18' rx='1.75' fill='%23eceff3'/%3E%3Crect x='21' y='10' width='3.5' height='12' rx='1.75' fill='%2335b5a5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-<canvas id="sakura"></canvas>
-<div class="card">
-  <h1>🌸 Phố Hoa Anh Đào</h1>
-  <p>Chào Hùng! Đây là file đầu tiên được “vibe code” thẳng vào repo <b>TESTMUSE</b>.<br>
-     Bấm nút bên dưới để gọi thêm một cơn mưa hoa nhé.</p>
-  <button id="btn">Thêm hoa rơi 🌸</button>
-  <div class="foot">Vibe-coded cùng Muse · 2026</div>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div class="app" id="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" aria-label="Primary">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="7" class="brand-bg"/><rect x="7" y="12" width="3.5" height="8" rx="1.75" class="brand-a"/><rect x="14" y="7" width="3.5" height="18" rx="1.75" class="brand-b"/><rect x="21" y="10" width="3.5" height="12" rx="1.75" class="brand-c"/></svg>
+      </span>
+      <span class="brand-text"><strong>MuseDeck</strong><small>Music &amp; video player</small></span>
+    </div>
+
+    <nav class="nav" aria-label="Library">
+      <button class="nav-item" data-nav="home"><span data-icon="home"></span><span class="nav-label">Home</span></button>
+      <button class="nav-item" data-nav="music"><span data-icon="music"></span><span class="nav-label">Music library</span></button>
+      <button class="nav-item" data-nav="videos"><span data-icon="video"></span><span class="nav-label">Video library</span></button>
+      <button class="nav-item" data-nav="playlists"><span data-icon="list"></span><span class="nav-label">Playlists</span><span class="nav-count" id="nav-playlist-count" hidden></span></button>
+      <button class="nav-item" data-nav="favorites"><span data-icon="heart"></span><span class="nav-label">Favorites</span><span class="nav-count" id="nav-fav-count" hidden></span></button>
+      <button class="nav-item" data-nav="history"><span data-icon="history"></span><span class="nav-label">Recently played</span></button>
+      <button class="nav-item" data-nav="queue"><span data-icon="queue"></span><span class="nav-label">Play queue</span><span class="nav-count" id="nav-queue-count" hidden></span></button>
+      <button class="nav-item" data-nav="url"><span data-icon="link"></span><span class="nav-label">Open from URL</span></button>
+      <button class="nav-item" data-nav="settings"><span data-icon="settings"></span><span class="nav-label">Settings</span></button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="btn btn-accent btn-block" id="btn-import-side"><span data-icon="upload"></span> Import media</button>
+      <button class="btn btn-ghost btn-block" id="btn-compact" aria-pressed="false"><span data-icon="collapse"></span><span class="nav-label">Compact sidebar</span></button>
+      <p class="sidebar-note">Files stay on this device. Nothing is uploaded.</p>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main" tabindex="-1">
+    <header class="topbar">
+      <h1 class="view-title" id="view-title">Home</h1>
+      <div class="topbar-actions">
+        <div class="search-wrap">
+          <span data-icon="search" aria-hidden="true"></span>
+          <label class="sr-only" for="search-input">Search the library</label>
+          <input id="search-input" type="search" name="search" placeholder="Search title or source…" autocomplete="off" spellcheck="false">
+        </div>
+        <label class="sort-label" for="sort-select">Sort
+          <select id="sort-select" name="sort">
+            <option value="added">Recently added</option>
+            <option value="title">Title A–Z</option>
+            <option value="kind">Media type</option>
+            <option value="size">File size</option>
+          </select>
+        </label>
+        <button class="icon-btn" id="btn-theme" aria-label="Switch to light theme"><span data-icon="sun"></span></button>
+        <button class="icon-btn" id="btn-queue-toggle" aria-label="Toggle play queue panel" aria-pressed="false"><span data-icon="queue"></span></button>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <!-- HOME -->
+      <section class="view" data-view="home" aria-label="Home">
+        <div class="stage-wrap" id="home-stage-slot"></div>
+        <div id="home-sections"></div>
+      </section>
+
+      <!-- MUSIC -->
+      <section class="view" data-view="music" aria-label="Music library" hidden>
+        <div class="view-head">
+          <p class="view-sub" id="music-count"></p>
+          <div class="view-tools">
+            <button class="btn" data-action="play-all" data-scope="music"><span data-icon="play"></span> Play all</button>
+            <button class="btn" data-action="import"><span data-icon="upload"></span> Import audio</button>
+          </div>
+        </div>
+        <div class="track-list" id="music-list"></div>
+      </section>
+
+      <!-- VIDEOS -->
+      <section class="view" data-view="videos" aria-label="Video library" hidden>
+        <div class="stage-wrap" id="videos-stage-slot"></div>
+        <div class="view-head">
+          <p class="view-sub" id="videos-count"></p>
+          <div class="view-tools">
+            <button class="btn" data-action="import"><span data-icon="upload"></span> Import video</button>
+          </div>
+        </div>
+        <div class="track-list" id="videos-list"></div>
+      </section>
+
+      <!-- WATCH (stage lives here by default) -->
+      <section class="view" data-view="watch" aria-label="Now watching" hidden>
+        <div class="stage-wrap" id="watch-stage-slot"></div>
+        <div id="watch-meta"></div>
+      </section>
+
+      <!-- PLAYLISTS -->
+      <section class="view" data-view="playlists" aria-label="Playlists" hidden>
+        <div class="view-head">
+          <p class="view-sub">Playlists are stored only in this browser.</p>
+          <div class="view-tools">
+            <button class="btn btn-accent" id="btn-new-playlist"><span data-icon="plus"></span> New playlist</button>
+          </div>
+        </div>
+        <div id="playlist-list"></div>
+      </section>
+
+      <!-- FAVORITES -->
+      <section class="view" data-view="favorites" aria-label="Favorites" hidden>
+        <div class="view-head">
+          <p class="view-sub" id="fav-count"></p>
+          <div class="view-tools">
+            <button class="btn" data-action="play-all" data-scope="favorites"><span data-icon="play"></span> Play all</button>
+          </div>
+        </div>
+        <div class="track-list" id="fav-list"></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="view" data-view="history" aria-label="Recently played" hidden>
+        <div class="view-head">
+          <p class="view-sub">The last 60 items you played in this browser.</p>
+          <div class="view-tools">
+            <button class="btn btn-danger-ghost" id="btn-clear-history"><span data-icon="trash"></span> Clear history</button>
+          </div>
+        </div>
+        <div class="track-list" id="history-list"></div>
+      </section>
+
+      <!-- QUEUE -->
+      <section class="view" data-view="queue" aria-label="Play queue" hidden>
+        <div class="view-head">
+          <p class="view-sub" id="queue-count"></p>
+          <div class="view-tools">
+            <button class="btn btn-danger-ghost" id="btn-clear-queue"><span data-icon="trash"></span> Clear queue</button>
+          </div>
+        </div>
+        <div class="track-list" id="queue-list"></div>
+      </section>
+
+      <!-- OPEN FROM URL -->
+      <section class="view" data-view="url" aria-label="Open from URL" hidden>
+        <form class="url-form" id="url-form" novalidate>
+          <label for="url-input">Paste a YouTube link or a direct media file URL</label>
+          <div class="url-row">
+            <input id="url-input" type="url" name="media-url" placeholder="https://www.youtube.com/watch?v=… or https://example.com/song.mp3" autocomplete="off" spellcheck="false" inputmode="url">
+            <button class="btn btn-accent" type="submit"><span data-icon="link"></span> Check link</button>
+          </div>
+          <p class="form-error" id="url-error" role="alert" hidden></p>
+          <div class="url-result" id="url-result" hidden></div>
+        </form>
+        <div class="help-panel">
+          <h2>Supported links</h2>
+          <ul>
+            <li>YouTube videos: <code>youtube.com/watch</code>, <code>youtu.be</code>, <code>/shorts/</code>, <code>/embed/</code>, YouTube Music links</li>
+            <li>YouTube playlists: <code>youtube.com/playlist?list=…</code> or any link with a <code>list=</code> parameter</li>
+            <li>Direct audio files: <code>.mp3 .wav .ogg .m4a .aac .flac .opus</code></li>
+            <li>Direct video files: <code>.mp4 .webm .mov .m4v</code> and <code>.m3u8</code> where the browser supports HLS</li>
+          </ul>
+          <p>YouTube videos play in YouTube's official embedded player. MuseDeck does not download YouTube media or bypass its restrictions — some videos cannot be embedded and YouTube will say so in the player.</p>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" data-view="settings" aria-label="Settings" hidden>
+        <div class="settings-grid">
+          <fieldset class="setting-group">
+            <legend>Appearance</legend>
+            <label class="setting-row" for="set-theme">Theme
+              <select id="set-theme" name="theme"><option value="dark">Dark</option><option value="light">Light</option></select>
+            </label>
+            <label class="setting-row check"><input type="checkbox" id="set-visualizer"> Enable visualizer &amp; equalizer processing <span class="setting-hint">Uses Web Audio with real frequency data, for imported files and repository media. Leave off for remote streams: routing a cross-origin stream without CORS through Web Audio can silence it.</span></label>
+          </fieldset>
+          <fieldset class="setting-group">
+            <legend>Playback</legend>
+            <label class="setting-row check"><input type="checkbox" id="set-autoplay"> Play the next queue item automatically</label>
+            <label class="setting-row" for="set-rate">Default playback speed
+              <select id="set-rate" name="rate">
+                <option value="0.5">0.5×</option><option value="0.75">0.75×</option>
+                <option value="1">1× (normal)</option><option value="1.25">1.25×</option>
+                <option value="1.5">1.5×</option><option value="2">2×</option>
+              </select>
+            </label>
+            <div class="setting-row eq-row">
+              <span>Equalizer <span class="setting-hint">Native media only — YouTube audio cannot be processed.</span></span>
+              <div class="eq-sliders">
+                <label>Bass <input type="range" id="eq-bass" min="-12" max="12" step="1" value="0"> <output id="eq-bass-out">0 dB</output></label>
+                <label>Mid <input type="range" id="eq-mid" min="-12" max="12" step="1" value="0"> <output id="eq-mid-out">0 dB</output></label>
+                <label>Treble <input type="range" id="eq-treble" min="-12" max="12" step="1" value="0"> <output id="eq-treble-out">0 dB</output></label>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="setting-group">
+            <legend>Storage &amp; data</legend>
+            <p class="setting-hint" id="storage-info">Checking local storage…</p>
+            <p class="setting-hint">Imported files are stored as blobs in this browser (IndexedDB) so they survive a reload. The browser can evict them under disk pressure. Settings, favorites, playlists and history use localStorage. Nothing leaves this device.</p>
+            <div class="view-tools">
+              <button class="btn" id="btn-shortcuts"><span data-icon="keyboard"></span> Keyboard shortcuts</button>
+              <button class="btn btn-danger-ghost" id="btn-clear-data"><span data-icon="trash"></span> Clear all local data</button>
+            </div>
+          </fieldset>
+          <fieldset class="setting-group">
+            <legend>Known limits</legend>
+            <ul class="limits-list">
+              <li>Formats are limited to what your browser can decode: MKV/AVI audio-video files generally will not play.</li>
+              <li>Remote files can fail because of CORS, an expired link, or an unsupported codec. The player reports the browser's actual error.</li>
+              <li>YouTube items keep YouTube's own controls and rules. Equalizer, visualizer, subtitle-file import and picture-in-picture do not apply to them.</li>
+              <li>HLS (.m3u8) plays natively in Safari; Chromium browsers usually cannot play it without an MSE-based player, which MuseDeck does not bundle.</li>
+            </ul>
+          </fieldset>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ============ QUEUE PANEL ============ -->
+  <aside class="queue-panel" id="queue-panel" aria-label="Play queue panel" hidden>
+    <div class="queue-panel-head">
+      <h2>Play queue</h2>
+      <button class="icon-btn" id="btn-queue-close" aria-label="Close queue panel"><span data-icon="x"></span></button>
+    </div>
+    <div class="track-list compact" id="queue-panel-list"></div>
+  </aside>
+
+  <!-- ============ PLAYER BAR ============ -->
+  <footer class="playerbar" aria-label="Player controls">
+    <div class="seek-row">
+      <span class="time mono" id="time-cur">0:00</span>
+      <label class="sr-only" for="seek">Seek</label>
+      <input type="range" id="seek" min="0" max="1000" step="1" value="0" aria-label="Seek">
+      <span class="time mono" id="time-dur">0:00</span>
+    </div>
+    <div class="player-main">
+      <div class="now-playing">
+        <div class="np-art" id="np-art" aria-hidden="true"></div>
+        <div class="np-meta">
+          <p class="np-title" id="np-title">Nothing playing</p>
+          <p class="np-sub" id="np-sub">Import a file or paste a link to start</p>
+        </div>
+        <button class="icon-btn" id="btn-fav" aria-label="Add current item to favorites" aria-pressed="false" disabled><span data-icon="heart"></span></button>
+      </div>
+
+      <div class="transport" role="group" aria-label="Transport">
+        <button class="icon-btn" id="btn-shuffle" aria-label="Shuffle" aria-pressed="false"><span data-icon="shuffle"></span></button>
+        <button class="icon-btn" id="btn-prev" aria-label="Previous track"><span data-icon="prev"></span></button>
+        <button class="play-btn" id="btn-play" aria-label="Play"><span data-icon="play"></span></button>
+        <button class="icon-btn" id="btn-next" aria-label="Next track"><span data-icon="next"></span></button>
+        <button class="icon-btn" id="btn-repeat" aria-label="Repeat: off" aria-pressed="false"><span data-icon="repeat"></span></button>
+      </div>
+
+      <div class="player-side">
+        <canvas id="viz" width="72" height="28" aria-hidden="true" hidden></canvas>
+        <div class="sleep-wrap">
+          <button class="icon-btn" id="btn-sleep" aria-label="Sleep timer" aria-haspopup="true" aria-expanded="false"><span data-icon="moon"></span></button>
+          <span class="sleep-left mono" id="sleep-left" aria-live="off"></span>
+          <div class="menu" id="sleep-menu" role="menu" hidden>
+            <button role="menuitem" data-sleep="0">Off</button>
+            <button role="menuitem" data-sleep="15">15 minutes</button>
+            <button role="menuitem" data-sleep="30">30 minutes</button>
+            <button role="menuitem" data-sleep="45">45 minutes</button>
+            <button role="menuitem" data-sleep="60">60 minutes</button>
+          </div>
+        </div>
+        <label class="sr-only" for="rate-select">Playback speed</label>
+        <select id="rate-select" class="rate-select" name="rate-select" aria-label="Playback speed">
+          <option value="0.5">0.5×</option><option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option><option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option><option value="2">2×</option>
+        </select>
+        <button class="icon-btn" id="btn-mute" aria-label="Mute"><span data-icon="volume"></span></button>
+        <label class="sr-only" for="volume">Volume</label>
+        <input type="range" id="volume" min="0" max="100" step="1" value="80" aria-label="Volume">
+      </div>
+    </div>
+    <p class="player-error" id="player-error" role="alert" hidden></p>
+  </footer>
 </div>
-<script>
-  const cv = document.getElementById("sakura"), ctx = cv.getContext("2d");
-  let W, H, petals = [];
-  function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
-  addEventListener("resize", resize); resize();
 
-  function newPetal(y) {
-    return {
-      x: Math.random() * W,
-      y: y !== undefined ? y : -20 - Math.random() * H * 0.3,
-      s: 6 + Math.random() * 10,
-      vy: 0.6 + Math.random() * 1.4,
-      ph: Math.random() * Math.PI * 2,
-      sway: 20 + Math.random() * 40,
-      rot: Math.random() * Math.PI,
-      vr: (Math.random() - 0.5) * 0.02,
-      hue: 330 + Math.random() * 25
-    };
-  }
-  for (let i = 0; i < 40; i++) { const p = newPetal(); p.y = Math.random() * H; petals.push(p); }
+<!-- Stage template content is moved between views by app.js -->
+<div id="stage" class="stage" hidden>
+  <div class="stage-media" id="stage-media">
+    <video id="video-el" playsinline preload="metadata" aria-label="Video player"></video>
+    <div id="yt-mount" class="yt-mount" aria-label="YouTube player"></div>
+    <button class="stage-bigplay" id="stage-bigplay" aria-label="Play or pause video"><span data-icon="play"></span></button>
+  </div>
+  <div class="stage-bar">
+    <span class="stage-title" id="stage-title">Video</span>
+    <span class="stage-note" id="stage-note"></span>
+    <span class="stage-spacer"></span>
+    <label class="btn btn-small" for="subtitle-input" id="btn-subtitle"><span data-icon="captions"></span> Add subtitles (.vtt)</label>
+    <button class="btn btn-small" id="btn-theater" aria-pressed="false"><span data-icon="theater"></span> Theater</button>
+    <button class="btn btn-small" id="btn-pip"><span data-icon="pip"></span> Picture in picture</button>
+    <button class="btn btn-small" id="btn-fullscreen"><span data-icon="maximize"></span> Fullscreen</button>
+    <button class="btn btn-small" id="btn-close-stage"><span data-icon="x"></span> Close</button>
+  </div>
+</div>
 
-  function draw(p, t) {
-    const x = p.x + Math.sin(t / 1600 + p.ph) * p.sway * 0.4;
-    ctx.save(); ctx.translate(x, p.y); ctx.rotate(p.rot + Math.sin(t / 900 + p.ph) * 0.4);
-    ctx.fillStyle = `hsla(${p.hue}, 85%, 78%, 0.9)`;
-    ctx.beginPath();
-    ctx.moveTo(0, -p.s);
-    ctx.bezierCurveTo(p.s * 0.9, -p.s * 0.6, p.s * 0.7, p.s * 0.7, 0, p.s);
-    ctx.bezierCurveTo(-p.s * 0.7, p.s * 0.7, -p.s * 0.9, -p.s * 0.6, 0, -p.s);
-    ctx.fill(); ctx.restore();
-  }
-  function tick(t) {
-    ctx.clearRect(0, 0, W, H);
-    for (const p of petals) {
-      p.y += p.vy; p.rot += p.vr;
-      if (p.y > H + 30) Object.assign(p, newPetal());
-      draw(p, t);
-    }
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
+<audio id="audio-el" preload="metadata"></audio>
+<input type="file" id="file-input" accept="audio/*,video/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.opus,.mp4,.m4v,.webm,.mov" multiple hidden>
+<input type="file" id="subtitle-input" accept=".vtt,text/vtt" hidden>
 
-  document.getElementById("btn").addEventListener("click", () => {
-    for (let i = 0; i < 25; i++) petals.push(newPetal());
-    if (petals.length > 220) petals.splice(0, petals.length - 220);
-  });
-</script>
+<div class="drop-overlay" id="drop-overlay" hidden>
+  <div class="drop-box"><span data-icon="upload"></span><p>Drop audio or video files to import them</p></div>
+</div>
+
+<div class="toast-region" aria-live="polite" aria-atomic="false" id="toast-region"></div>
+
+<dialog id="dialog-playlist" aria-labelledby="dialog-playlist-title">
+  <form method="dialog" id="playlist-form">
+    <h2 id="dialog-playlist-title">Playlist</h2>
+    <label for="playlist-name">Playlist name</label>
+    <input id="playlist-name" type="text" name="playlist-name" maxlength="80" placeholder="Evening mix…" autocomplete="off">
+    <div class="dialog-actions">
+      <button class="btn" value="cancel" formnovalidate>Cancel</button>
+      <button class="btn btn-accent" id="playlist-save" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-addto" aria-labelledby="dialog-addto-title">
+  <form method="dialog">
+    <h2 id="dialog-addto-title">Add to playlist</h2>
+    <div id="addto-list" class="addto-list"></div>
+    <div class="dialog-actions">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn" id="addto-new" value="new">New playlist…</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-confirm" aria-labelledby="confirm-title">
+  <form method="dialog">
+    <h2 id="confirm-title">Are you sure?</h2>
+    <p id="confirm-body"></p>
+    <div class="dialog-actions">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn btn-danger" id="confirm-yes" value="yes">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dialog-shortcuts" aria-labelledby="shortcuts-title">
+  <form method="dialog">
+    <h2 id="shortcuts-title">Keyboard shortcuts</h2>
+    <dl class="shortcuts">
+      <div><dt>Space / K</dt><dd>Play or pause</dd></div>
+      <div><dt>← / →</dt><dd>Seek 5 seconds (Shift: 15 seconds)</dd></div>
+      <div><dt>↑ / ↓</dt><dd>Volume up / down</dd></div>
+      <div><dt>M</dt><dd>Mute or unmute</dd></div>
+      <div><dt>N / P</dt><dd>Next / previous in queue</dd></div>
+      <div><dt>S</dt><dd>Shuffle on or off</dd></div>
+      <div><dt>R</dt><dd>Cycle repeat: off, all, one</dd></div>
+      <div><dt>F</dt><dd>Fullscreen (when a video stage is open)</dd></div>
+      <div><dt>/</dt><dd>Focus search</dd></div>
+    </dl>
+    <p class="setting-hint">Shortcuts never fire while you are typing in a field.</p>
+    <div class="dialog-actions"><button class="btn btn-accent" value="close">Done</button></div>
+  </form>
+</dialog>
+
+<script type="module" src="scripts/main.js"></script>
 </body>
 </html>
