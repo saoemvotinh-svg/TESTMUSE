@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phố Hoa Anh Đào 🌸</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; overflow: hidden;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: linear-gradient(180deg, #6ec1f5 0%, #aee3ff 35%, #ffe3f1 75%, #fff0f6 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  canvas { position: fixed; inset: 0; z-index: 1; }
+  .card {
+    position: relative; z-index: 2; text-align: center;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 24px; padding: 44px 52px;
+    box-shadow: 0 18px 50px rgba(214, 90, 140, 0.25);
+    max-width: min(92vw, 560px);
+  }
+  h1 { font-size: 2.4rem; color: #b03060; letter-spacing: 0.5px; }
+  p { margin: 14px 0 24px; color: #5b4250; line-height: 1.6; }
+  button {
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+    color: #fff; background: linear-gradient(135deg, #ff7eb3, #e75480);
+    border: none; border-radius: 999px; padding: 12px 26px;
+    box-shadow: 0 8px 20px rgba(231, 84, 128, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(231, 84, 128, 0.45); }
+  .foot { margin-top: 22px; font-size: 0.85rem; color: #97707f; }
+</style>
+</head>
+<body>
+<canvas id="sakura"></canvas>
+<div class="card">
+  <h1>🌸 Phố Hoa Anh Đào</h1>
+  <p>Chào Hùng! Đây là file đầu tiên được “vibe code” thẳng vào repo <b>TESTMUSE</b>.<br>
+     Bấm nút bên dưới để gọi thêm một cơn mưa hoa nhé.</p>
+  <button id="btn">Thêm hoa rơi 🌸</button>
+  <div class="foot">Vibe-coded cùng Muse · 2026</div>
+</div>
+<script>
+  const cv = document.getElementById("sakura"), ctx = cv.getContext("2d");
+  let W, H, petals = [];
+  function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+  addEventListener("resize", resize); resize();
+
+  function newPetal(y) {
+    return {
+      x: Math.random() * W,
+      y: y !== undefined ? y : -20 - Math.random() * H * 0.3,
+      s: 6 + Math.random() * 10,
+      vy: 0.6 + Math.random() * 1.4,
+      ph: Math.random() * Math.PI * 2,
+      sway: 20 + Math.random() * 40,
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 0.02,
+      hue: 330 + Math.random() * 25
+    };
+  }
+  for (let i = 0; i < 40; i++) { const p = newPetal(); p.y = Math.random() * H; petals.push(p); }
+
+  function draw(p, t) {
+    const x = p.x + Math.sin(t / 1600 + p.ph) * p.sway * 0.4;
+    ctx.save(); ctx.translate(x, p.y); ctx.rotate(p.rot + Math.sin(t / 900 + p.ph) * 0.4);
+    ctx.fillStyle = `hsla(${p.hue}, 85%, 78%, 0.9)`;
+    ctx.beginPath();
+    ctx.moveTo(0, -p.s);
+    ctx.bezierCurveTo(p.s * 0.9, -p.s * 0.6, p.s * 0.7, p.s * 0.7, 0, p.s);
+    ctx.bezierCurveTo(-p.s * 0.7, p.s * 0.7, -p.s * 0.9, -p.s * 0.6, 0, -p.s);
+    ctx.fill(); ctx.restore();
+  }
+  function tick(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (const p of petals) {
+      p.y += p.vy; p.rot += p.vr;
+      if (p.y > H + 30) Object.assign(p, newPetal());
+      draw(p, t);
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  document.getElementById("btn").addEventListener("click", () => {
+    for (let i = 0; i < 25; i++) petals.push(newPetal());
+    if (petals.length > 220) petals.splice(0, petals.length - 220);
+  });
+</script>
+</body>
+</html>
