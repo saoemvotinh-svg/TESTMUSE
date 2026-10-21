@@ -978,6 +978,7 @@ function setView(view) {
   });
   els["view-title"].textContent = VIEW_TITLES[view];
   if (location.hash !== `#/${view}`) history.replaceState(null, "", `#/${view}`);
+  renderAll(); // lists always reflect the latest library/queue state on entry
   placeStage();
   els.content.scrollTop = 0;
 }
@@ -1301,7 +1302,9 @@ function wireEvents() {
   /* keyboard */
   document.addEventListener("keydown", (e) => {
     const target = e.target;
-    const typing = target.closest("input, textarea, select, [contenteditable='true']") || target.isContentEditable;
+    const typing = target instanceof Element
+      ? (target.closest("input, textarea, select, [contenteditable='true']") || target.isContentEditable)
+      : false;
     if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
     if (document.querySelector("dialog[open]")) return;
     const item = currentItem();
