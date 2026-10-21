@@ -632,6 +632,7 @@ function placeStage() {
    for local videos without artwork) behind the stage. Purely decorative. */
 function updateAmbient() {
   const layer = $("#ambient");
+  if (!layer) return;
   const item = currentItem();
   const on = state.settings.ambient && item && (item.kind === "video" || item.source === "youtube") && !els.stage.hidden;
   if (!on) { layer.hidden = true; return; }
@@ -1080,10 +1081,15 @@ async function init() {
 
   applyTheme();
   applySettingsToPlayer();
-  $("#set-boost").value = String(state.settings.boost || 1);
-  $("#set-skin").value = state.settings.skin || "default";
-  $("#set-ambient").checked = state.settings.ambient !== false;
-  $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient !== false));
+  // Guarded: if a cached page ever pairs older HTML with this script,
+  // a missing optional control must not stop the whole app from starting.
+  const setVal = (sel, v) => { const n = $(sel); if (n) n.value = v; };
+  const setChk = (sel, v) => { const n = $(sel); if (n) n.checked = v; };
+  setVal("#set-boost", String(state.settings.boost || 1));
+  setVal("#set-skin", state.settings.skin || "default");
+  setChk("#set-ambient", state.settings.ambient !== false);
+  const ambBtn = $("#btn-ambient");
+  if (ambBtn) ambBtn.setAttribute("aria-pressed", String(state.settings.ambient !== false));
   applySkin();
   $("#set-visualizer").checked = !!state.settings.visualizer;
   $("#set-autoplay").checked = !!state.settings.autoplayNext;
@@ -1170,7 +1176,7 @@ function wireEvents() {
     toast(`Repeat: ${state.settings.repeat}.`);
   });
   els["btn-fav"].addEventListener("click", () => { if (state.currentId) toggleFavorite(state.currentId); });
-  $("#btn-ab").addEventListener("click", () => {
+  $("#btn-ab")?.addEventListener("click", () => {
     const t = p.currentTime;
     if (!state.currentId) { toast("Play something first, then mark a section to loop."); return; }
     if (state.ab.a == null) {
@@ -1272,21 +1278,21 @@ function wireEvents() {
     els.content.classList.toggle("theater-mode", on);
     $("#btn-theater").setAttribute("aria-pressed", String(on));
   });
-  $("#btn-ambient").addEventListener("click", () => {
+  $("#btn-ambient")?.addEventListener("click", () => {
     state.settings.ambient = !state.settings.ambient;
     saveSettings();
-    $("#set-ambient").checked = state.settings.ambient;
+    { const n = $("#set-ambient"); if (n) n.checked = state.settings.ambient; }
     $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient));
     updateAmbient();
   });
-  $("#video-filter").addEventListener("change", () => {
+  $("#video-filter")?.addEventListener("change", () => {
     state.videoFilter = $("#video-filter").value;
     for (const el of [els["video-el"], els["yt-mount"]]) {
       el.classList.remove("f-bright", "f-warm", "f-vivid", "f-mono");
       if (state.videoFilter) el.classList.add("f-" + state.videoFilter);
     }
   });
-  $("#btn-snapshot").addEventListener("click", () => {
+  $("#btn-snapshot")?.addEventListener("click", () => {
     const item = currentItem();
     if (!item || item.source === "youtube") { toast("Frames inside YouTube's player cannot be captured.", true); return; }
     const video = els["video-el"];
@@ -1383,7 +1389,7 @@ function wireEvents() {
       if (state.settings.visualizer || state.graph) { ensureGraph(); applyEq(); }
     });
   }
-  $("#set-boost").addEventListener("change", () => {
+  $("#set-boost")?.addEventListener("change", () => {
     state.settings.boost = Number($("#set-boost").value);
     saveSettings();
     const item = currentItem();
@@ -1392,14 +1398,14 @@ function wireEvents() {
     }
     if (graphEligible(item)) { ensureGraph(); applyBoost(); }
   });
-  $("#set-skin").addEventListener("change", () => {
+  $("#set-skin")?.addEventListener("change", () => {
     state.settings.skin = $("#set-skin").value;
     saveSettings(); applySkin();
   });
-  $("#set-ambient").addEventListener("change", () => {
+  $("#set-ambient")?.addEventListener("change", () => {
     state.settings.ambient = $("#set-ambient").checked;
     saveSettings();
-    $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient));
+    { const n = $("#btn-ambient"); if (n) n.setAttribute("aria-pressed", String(state.settings.ambient)); }
     updateAmbient();
   });
   $("#btn-shortcuts").addEventListener("click", () => $("#dialog-shortcuts").showModal());
