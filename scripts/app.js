@@ -35,6 +35,9 @@ const state = {
   seeking: false,
   graph: null,              // WebAudio graph (opt-in, native local media)
   graphWarned: false,
+  ab: { a: null, b: null }, // A-B section loop points (seconds, session only)
+  videoFilter: "",
+  lastAmbientCapture: 0,
   pendingPlaylistItem: null,
 };
 
@@ -529,6 +532,8 @@ async function playItem(id, { fromQueue = false } = {}) {
   }
   state.currentId = id;
   state.stageClosed = false;
+  state.ab = { a: null, b: null };
+  updateAbBtn();
   const playable = { ...item, src: resolveSrc(item) };
   if (item.source === "file" && !playable.src) {
     showPlayerError("This imported file could not be read back from local storage. It may have been evicted by the browser — import it again.");
@@ -617,8 +622,50 @@ function placeStage() {
   $("#btn-subtitle").style.display = native && item.kind === "video" ? "" : "none";
   $("#btn-pip").disabled = !native;
   $("#btn-pip").title = native ? "" : "Picture-in-picture is not available for YouTube embeds in this player.";
+  $("#btn-snapshot").disabled = !native;
+  $("#btn-snapshot").title = native ? "Save the current frame as a PNG" : "Frames inside YouTube's player cannot be captured.";
   updateStagePausedClass();
+  updateAmbient();
 }
+
+/* Ambient glow: a blurred copy of the item's artwork (or a captured frame
+   for local videos without artwork) behind the stage. Purely decorative. */
+function updateAmbient() {
+  const layer = $("#ambient");
+  const item = currentItem();
+  const on = state.settings.ambient && item && (item.kind === "video" || item.source === "youtube") && !els.stage.hidden;
+  if (!on) { layer.hidden = true; return; }
+  if (item.artwork) {
+    layer.style.backgroundImage = `url("${item.artwork}")`;
+    layer.hidden = false;
+    return;
+  }
+  if (item.source !== "youtube") captureAmbientFrame();
+  if (!layer.style.backgroundImage) layer.hidden = true;
+}
+function captureAmbientFrame() {
+  const video = els["video-el"];
+  const layer = $("#ambient");
+  if (!video.videoWidth || !video.videoHeight) return;
+  try {
+    const c = document.createElement("canvas");
+    c.width = 160; c.height = Math.round(160 * video.videoHeight / video.videoWidth);
+    c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+    layer.style.backgroundImage = `url("${c.toDataURL("image/jpeg", 0.6)}")`;
+    layer.hidden = false;
+  } catch { /* frame capture is best-effort decoration */ }
+}
+function updateAbBtn() {
+  const btn = $("#btn-ab");
+  if (!btn) return;
+  const { a, b } = state.ab;
+  btn.setAttribute("aria-pressed", String(a != null));
+  btn.textContent = a == null ? "A–B" : b == null ? `A ${fmtTime(a)}–…` : `${fmtTime(a)}–${fmtTime(b)}`;
+  btn.title = a == null
+    ? "Loop a section: first click sets point A, second sets point B, third clears"
+    : "Section loop active — click to clear (after B is set)";
+}
+
 function updateStagePausedClass() {
   const p = player();
   els["stage-media"].classList.toggle("paused", !p || p.paused);
@@ -862,15 +909,25 @@ function ensureGraph() {
     const mid = ctx.createBiquadFilter(); mid.type = "peaking"; mid.frequency.value = 1000; mid.Q.value = 0.9;
     const treble = ctx.createBiquadFilter(); treble.type = "highshelf"; treble.frequency.value = 3200;
     const analyser = ctx.createAnalyser(); analyser.fftSize = 128;
+    const boostGain = ctx.createGain();
     for (const el of [els["audio-el"], els["video-el"]]) {
       const src = ctx.createMediaElementSource(el);
       src.connect(bass);
     }
-    bass.connect(mid); mid.connect(treble); treble.connect(analyser); analyser.connect(ctx.destination);
-    state.graph = { ctx, bass, mid, treble, analyser };
-    applyEq();
+    bass.connect(mid); mid.connect(treble); treble.connect(analyser); analyser.connect(boostGain); boostGain.connect(ctx.destination);
+    state.graph = { ctx, bass, mid, treble, analyser, boostGain };
+    applyEq(); applyBoost();
     return state.graph;
   } catch { return null; }
+}
+function applyBoost() {
+  if (state.graph) state.graph.boostGain.gain.value = state.settings.boost || 1;
+}
+function graphEligible(item) {
+  // WebAudio processing is safe for media the browser lets us process:
+  // imported files and same-origin repository media. Remote streams are
+  // excluded on purpose (no-CORS streams would be silenced by routing).
+  return item && item.source !== "youtube" && item.source !== "direct";
 }
 function applyEq() {
   if (!state.graph) return;
@@ -959,6 +1016,10 @@ function applyTheme() {
   $("#set-theme").value = state.settings.theme;
 }
 function saveSettings() { store.saveSettings(state.settings); }
+function applySkin() {
+  const bar = document.querySelector(".playerbar");
+  if (bar) bar.dataset.skin = state.settings.skin || "default";
+}
 
 async function refreshStorageInfo() {
   const est = await store.storageEstimate();
@@ -1019,6 +1080,11 @@ async function init() {
 
   applyTheme();
   applySettingsToPlayer();
+  $("#set-boost").value = String(state.settings.boost || 1);
+  $("#set-skin").value = state.settings.skin || "default";
+  $("#set-ambient").checked = state.settings.ambient !== false;
+  $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient !== false));
+  applySkin();
   $("#set-visualizer").checked = !!state.settings.visualizer;
   $("#set-autoplay").checked = !!state.settings.autoplayNext;
   $("#set-rate").value = String(state.settings.rate);
@@ -1104,6 +1170,22 @@ function wireEvents() {
     toast(`Repeat: ${state.settings.repeat}.`);
   });
   els["btn-fav"].addEventListener("click", () => { if (state.currentId) toggleFavorite(state.currentId); });
+  $("#btn-ab").addEventListener("click", () => {
+    const t = p.currentTime;
+    if (!state.currentId) { toast("Play something first, then mark a section to loop."); return; }
+    if (state.ab.a == null) {
+      state.ab.a = t;
+      toast(`Loop point A set at ${fmtTime(t)}. Click A–B again for point B.`);
+    } else if (state.ab.b == null) {
+      if (t <= state.ab.a + 0.5) { toast("Point B must be after point A. Let it play a little further.", true); return; }
+      state.ab.b = t;
+      toast(`Looping ${fmtTime(state.ab.a)} → ${fmtTime(state.ab.b)}. Click A–B again to clear.`);
+    } else {
+      state.ab = { a: null, b: null };
+      toast("Section loop cleared.");
+    }
+    updateAbBtn();
+  });
 
   function togglePlay() {
     if (!state.currentId) {
@@ -1146,6 +1228,11 @@ function wireEvents() {
   els["rate-select"].addEventListener("change", () => {
     state.settings.rate = Number(els["rate-select"].value);
     saveSettings(); applySettingsToPlayer();
+    setTimeout(() => {
+      if (p.isYouTube && p.appliedRate && p.appliedRate !== state.settings.rate) {
+        toast(`YouTube offers up to ${p.appliedRate}× for this video, so ${p.appliedRate}× was applied. Higher speeds work on local media.`);
+      }
+    }, 350);
   });
 
   /* sleep */
@@ -1184,6 +1271,39 @@ function wireEvents() {
     const on = stage.classList.toggle("theater");
     els.content.classList.toggle("theater-mode", on);
     $("#btn-theater").setAttribute("aria-pressed", String(on));
+  });
+  $("#btn-ambient").addEventListener("click", () => {
+    state.settings.ambient = !state.settings.ambient;
+    saveSettings();
+    $("#set-ambient").checked = state.settings.ambient;
+    $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient));
+    updateAmbient();
+  });
+  $("#video-filter").addEventListener("change", () => {
+    state.videoFilter = $("#video-filter").value;
+    for (const el of [els["video-el"], els["yt-mount"]]) {
+      el.classList.remove("f-bright", "f-warm", "f-vivid", "f-mono");
+      if (state.videoFilter) el.classList.add("f-" + state.videoFilter);
+    }
+  });
+  $("#btn-snapshot").addEventListener("click", () => {
+    const item = currentItem();
+    if (!item || item.source === "youtube") { toast("Frames inside YouTube's player cannot be captured.", true); return; }
+    const video = els["video-el"];
+    if (!video.videoWidth) { toast("No video frame is available yet — play the video first.", true); return; }
+    try {
+      const c = document.createElement("canvas");
+      c.width = video.videoWidth; c.height = video.videoHeight;
+      c.getContext("2d").drawImage(video, 0, 0);
+      c.toBlob(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `musedeck-frame-${Date.now()}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast("Frame saved as PNG.");
+      }, "image/png");
+    } catch { toast("This frame cannot be captured (the source blocks canvas access).", true); }
   });
   $("#btn-pip").addEventListener("click", async () => {
     try {
@@ -1263,6 +1383,25 @@ function wireEvents() {
       if (state.settings.visualizer || state.graph) { ensureGraph(); applyEq(); }
     });
   }
+  $("#set-boost").addEventListener("change", () => {
+    state.settings.boost = Number($("#set-boost").value);
+    saveSettings();
+    const item = currentItem();
+    if (state.settings.boost > 1 && item && !graphEligible(item)) {
+      toast("Volume boost applies to imported files and repository media only — it will take effect on the next local item.");
+    }
+    if (graphEligible(item)) { ensureGraph(); applyBoost(); }
+  });
+  $("#set-skin").addEventListener("change", () => {
+    state.settings.skin = $("#set-skin").value;
+    saveSettings(); applySkin();
+  });
+  $("#set-ambient").addEventListener("change", () => {
+    state.settings.ambient = $("#set-ambient").checked;
+    saveSettings();
+    $("#btn-ambient").setAttribute("aria-pressed", String(state.settings.ambient));
+    updateAmbient();
+  });
   $("#btn-shortcuts").addEventListener("click", () => $("#dialog-shortcuts").showModal());
   $("#btn-clear-data").addEventListener("click", async () => {
     if (await confirmDialog("Clear all MuseDeck data?", "Settings, favorites, playlists, history and all imported files stored in this browser will be deleted. Files on your device are not touched.")) {
@@ -1277,7 +1416,11 @@ function wireEvents() {
     setIcon(els["btn-play"], "pause");
     els["btn-play"].setAttribute("aria-label", "Pause");
     updateStagePausedClass();
-    if (state.settings.visualizer && !p.isYouTube) { ensureGraph(); if (state.graph && state.graph.ctx.state === "suspended") state.graph.ctx.resume(); }
+    const item1 = currentItem();
+    if (!p.isYouTube && graphEligible(item1) && (state.settings.visualizer || state.settings.boost > 1)) {
+      ensureGraph(); applyBoost();
+      if (state.graph && state.graph.ctx.state === "suspended") state.graph.ctx.resume();
+    }
     syncViz();
   });
   p.on("pause", () => {
@@ -1286,6 +1429,15 @@ function wireEvents() {
     updateStagePausedClass(); syncViz();
   });
   p.on("timeupdate", () => {
+    if (state.ab.a != null && state.ab.b != null && p.currentTime >= state.ab.b) {
+      p.seekTo(state.ab.a);
+    }
+    const item0 = currentItem();
+    if (item0 && item0.source !== "youtube" && !item0.artwork && state.settings.ambient
+        && Date.now() - state.lastAmbientCapture > 4000 && !p.paused) {
+      state.lastAmbientCapture = Date.now();
+      captureAmbientFrame();
+    }
     if (!state.seeking) {
       const d = p.duration, t = p.currentTime;
       els.seek.value = d > 0 ? String(Math.round((t / d) * 1000)) : "0";
